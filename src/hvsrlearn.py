@@ -18,7 +18,7 @@ class HvsrCalculator:
         master.title("hvsrlearn")
 
         # Cargar la imagen como ícono
-        icon_image = Image.open("/Users/Chemitas/Desktop/Desk/proyectos/hvsrlearn/images/_fe736d41-4f4e-4f77-9ba5-19a191dd2447.jpeg")
+        icon_image = Image.open("/Users/Chemitas/Desktop/Desk/proyectos/hvsrlearn/images/icono.png")
         icon_image = icon_image.resize((150, 150), Image.BICUBIC)
         self.icon_image = ImageTk.PhotoImage(icon_image)
 
@@ -154,13 +154,13 @@ class HvsrCalculator:
         z = self.entry_z.get()
         n = self.entry_n.get()
         e = self.entry_e.get()
-        sm = int(self.entry_smooth.get())
+        sm = float(self.entry_smooth.get())
         method = self.hvs_var.get()
         window = self.window_var.get()
-        ancho = int(self.entry_len.get())
-        overlap = int(self.entry_overlap.get())
+        ancho = float(self.entry_len.get())
+        overlap = float(self.entry_overlap.get())
         detr = self.detrend_var.get()
-        confianza = int(self.entry_sd.get())
+        confianza = float(self.entry_sd.get())
 
         # Llamar a la función de cálculo de HVSR
         self.calculate_hvsr_helper(z, n, e, sm, method, window, ancho, overlap, detr, confianza)
@@ -277,9 +277,10 @@ class HvsrCalculator:
         print('----------------------------------------------------------\n'
             'Estación: {}\n'
             'Método usado: {}\n'
+            'Muestras por ventana: {}\n'
             'frecuencia del sitio: {} Hz\n'
             'Amplitud del sitio: {} m\n'
-            'Comentarios:\n'.format(st_z[0].stats.station, method, frecuencia_sitio, 1/frecuencia_sitio))
+            'Comentarios:\n'.format(st_z[0].stats.station, method, nperseg, frecuencia_sitio, 1/frecuencia_sitio))
         
         
         figure = plt.Figure(figsize=(6, 5), dpi=100)
