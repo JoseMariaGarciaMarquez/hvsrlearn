@@ -1,0 +1,19 @@
+name: hvsrlearn
+channels:
+  - nodefaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - jupyterlab
+  - python
+  - matplotlib
+  - numpy
+  - obspy
+  - scipy
+  - pillow
+  - black
+  - isort
+  - pip
+  - vulture
+  - pip:
+    - makim==1.8.2
