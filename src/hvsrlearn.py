@@ -1,7 +1,6 @@
 import sys
 import tkinter as tk
 import numpy as np
-#import pandas as pd
 import matplotlib.pyplot as plt
 import subprocess
 
@@ -18,7 +17,7 @@ class HvsrCalculator:
         master.title("hvsrlearn")
 
         # Cargar la imagen como ícono
-        icon_image = Image.open("/Users/Chemitas/Desktop/Desk/proyectos/hvsrlearn/images/icono.png")
+        icon_image = Image.open("/images/icono.png")
         icon_image = icon_image.resize((150, 150), Image.BICUBIC)
         self.icon_image = ImageTk.PhotoImage(icon_image)
 
@@ -42,11 +41,11 @@ class HvsrCalculator:
 
         # Botón para guardar imagen
         self.save_image_button = tk.Button(self.master, text="Guardar Imagen", command=self.save_image)
-        self.save_image_button.grid(row=0, column=3 , padx=10, pady=10)
+        self.save_image_button.grid(row=7, column=2 , padx=10, pady=10)
 
         # Botón para cambiar el eje y a escala logarítmica
         self.log_y_button = tk.Button(self.master, text="Eje Y Log", command=self.toggle_log_y)
-        self.log_y_button.grid(row=1, column=3, padx=10, pady=5)
+        self.log_y_button.grid(row=8, column=2, padx=10, pady=5)
 
         # Variable de control para el estado del eje y logarítmico
         self.log_y_state = tk.BooleanVar(value=False)
@@ -97,7 +96,7 @@ class HvsrCalculator:
         self.label_hvs = tk.Label(self.master, text="Método HVSR")
         self.label_hvs.grid(row=7, column=0)
         self.hvs_var = tk.StringVar(self.master)
-        self.hvs_var.set('Luendei and Albarello N')
+        self.hvs_var.set('Nakamura')
         self.hvs_combo = tk.OptionMenu(self.master, self.hvs_var, 'Luendei and Albarello N', 'Luendei and Albarello E', 'Picozzi', 'Lunedei and Malischewsky', 'Nakamura')
         self.hvs_combo.grid(row=7, column=1)
 
