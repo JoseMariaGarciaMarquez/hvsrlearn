@@ -33,16 +33,16 @@ To run "hvsrlearn," follow these steps:
     cd hvsrlearn
     ```
 
-2. Install the required dependencies:
+2. Create the conda eviroment:
 
     ```bash
-    pip install -r requirements.txt
+    conda env create -f fqlearn.yaml
     ```
 
 3. Run the application:
 
     ```bash
-    python hvsrlearn.py
+    python src/hvsrlearn.py
     ```
 
 ## Usage
