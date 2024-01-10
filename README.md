@@ -57,6 +57,9 @@ To run "hvsrlearn," follow these steps:
 
 5. Save generated results for further analysis or reference.
 
+![Captura de Pantalla 2024-01-09 a la(s) 21 11 55](https://github.com/JoseMariaGarciaMarquez/hvsrlearn/assets/30852961/214c0abe-1bba-4438-b3ec-139c26904770)
+
+
 ## Contributing
 
 Contributions are welcome! If you have ideas for improvements or encounter issues, please open an [issue](https://github.com/your-username/hvsrlearn/issues) or submit a [pull request](https://github.com/your-username/hvsrlearn/pulls).
