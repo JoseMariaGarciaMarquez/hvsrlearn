@@ -17,7 +17,7 @@ class HvsrCalculator:
         master.title("hvsrlearn")
 
         # Cargar la imagen como ícono
-        icon_image = Image.open("/images/icono.png")
+        icon_image = Image.open("images/icono.png")
         icon_image = icon_image.resize((150, 150), Image.BICUBIC)
         self.icon_image = ImageTk.PhotoImage(icon_image)
 
@@ -227,6 +227,7 @@ class HvsrCalculator:
                          nfft=sm*nperseg,
                          scaling='spectrum', average='median')
         
+        
         if method == 'Luendei and Albarello N':
             HV = Pn / Pz  # Lunedei and Albarello N
             
@@ -257,7 +258,7 @@ class HvsrCalculator:
             sd = np.std(HV[i-window_size+1:i+1])
             
         # Definir un umbral para la desviación estándar
-        sd_threshold = confianza * (max(sd_moving)/100)  # Ajusta este valor según tus necesidades
+        sd_threshold = confianza * (max(sd_moving)/100)  
 
         # Crear la máscara con la condición de la desviación estándar
         mask = sd_moving < sd_threshold
@@ -270,6 +271,7 @@ class HvsrCalculator:
         HV_f = HV[mask]
 
         pos = np.argmax(HV_f)
+        sd = sd_moving[pos]
         frecuencia_sitio = f_f[pos]
 
         
@@ -278,8 +280,9 @@ class HvsrCalculator:
             'Método usado: {}\n'
             'Muestras por ventana: {}\n'
             'frecuencia del sitio: {} Hz\n'
+            'Desviación estandar de la frecuencia: {} Hz\n'
             'Amplitud del sitio: {} m\n'
-            'Comentarios:\n'.format(st_z[0].stats.station, method, nperseg, frecuencia_sitio, 1/frecuencia_sitio))
+            'Comentarios:\n'.format(st_z[0].stats.station, method, nperseg, frecuencia_sitio, sd, 1/frecuencia_sitio))
         
         
         figure = plt.Figure(figsize=(6, 5), dpi=100)
@@ -289,8 +292,11 @@ class HvsrCalculator:
         ax.plot(f, HV + sd_moving, '--', lw=0.5, c='black')
         ax.plot(f, HV, label=method)
         ax.plot(f, sd_moving, label='SD')
-        ax.axvline(frecuencia_sitio, c='red', linestyle='--', label='Frecuencia del sitio')
-        ax.axhline(sd_threshold, c='pink', linestyle='--')
+        ax.axvline(frecuencia_sitio, c='red', label='Frecuencia del sitio')
+        ax.axvline(frecuencia_sitio - sd, c='red', linestyle='--', )
+        ax.axvline(frecuencia_sitio + sd, c='red', linestyle='--')
+        ax.axvspan(frecuencia_sitio - sd, frecuencia_sitio + sd, color='pink', alpha=0.5)
+        ax.axhline(sd_threshold, c='darkorange', linestyle='--')
         ax.fill_between(f, HV - sd_moving, HV + sd_moving, color='gray', alpha=0.5)
         ax.scatter(f_rejected, rejected_data, s=20, marker='*', c='gold', label='Rejected')
         ax.scatter(frecuencia_sitio, HV_f[pos], s=100, marker='*', c='violet')
