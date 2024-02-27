@@ -122,6 +122,10 @@ class HvsrCalculator:
         self.exit_button = tk.Button(self.master, text="Salir", command=self.master.destroy)
         self.exit_button.grid(row=11, column=0, columnspan=2)
 
+        for i in range(12):
+            self.master.grid_rowconfigure(i, weight=1)
+            self.master.grid_columnconfigure(i, weight=1)
+
     def toggle_log_y(self):
         # Función para cambiar el estado del eje y a escala logarítmica
         self.log_y_state.set(not self.log_y_state.get())
