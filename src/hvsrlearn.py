@@ -8,10 +8,15 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 from obspy import read
 from scipy import signal
+from obspy.core.trace import Trace
+from obspy.core.stream import Stream
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 class HvsrCalculator:
+    """
+    Clase principal que realiza el cálculo del espectro de razón espectral horizontal-vertical (HVSR).
+    """
     def __init__(self, master):
         self.master = master
         master.title("hvsrlearn")
