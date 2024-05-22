@@ -11,6 +11,7 @@ from scipy import signal
 from obspy.core.trace import Trace
 from obspy.core.stream import Stream
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from obspy.signal.konnoohmachismoothing import konno_ohmachi_smoothing
 
 
 class HvsrCalculator:
@@ -235,25 +236,31 @@ class HvsrCalculator:
                          noverlap=overlapping,
                          nfft=sm*nperseg,
                          scaling='spectrum', average='median')
-        
+
+        # https://github.com/arkottke/pykooh/blob/main/example.ipynb
+        # Implementación de suavizamiento a partir del enlace anterior
+        b = 188.5
+        ko_Pz = konno_ohmachi_smoothing(Pz, f, b, normalize=True)
+        ko_Pn = konno_ohmachi_smoothing(Pn, f, b, normalize=True)
+        ko_Pe = konno_ohmachi_smoothing(Pe, f, b, normalize=True)
         
         if method == 'Luendei and Albarello N':
-            HV = Pn / Pz  # Lunedei and Albarello N
+            HV = ko_Pn / ko_Pz  # Lunedei and Albarello N
             
         if method == 'Luendei and Albarello E':
-            HV = Pe / Pz  # Lunedei and Albarello E
+            HV = ko_Pe / ko_Pz  # Lunedei and Albarello E
         
         if method == 'Picozzi':
-            HV = (np.sqrt(Pn * Pe)) / Pz  # Picozzi
+            HV = (np.sqrt(ko_Pn * ko_Pe)) / ko_Pz  # Picozzi
             
         if method == 'Lunedei and Malischewsky':
-            HV = np.sqrt((Pn + Pe) / Pz)  # Lunedei and Malischewsky
+            HV = np.sqrt((ko_Pn + ko_Pe) / ko_Pz)  # Lunedei and Malischewsky
         
         if method == 'Nakamura':
-            HV = (np.sqrt(Pn**2 + Pe**2)) / Pz  # Nakamura
+            HV = (np.sqrt(ko_Pn**2 + ko_Pe**2)) / ko_Pz  # Nakamura
             
         if method == 'Nuevo':
-            HV = (Pn + Pe) / Pz
+            HV = (ko_Pn + ko_Pe) / ko_Pz
             
         """
         Sección para proponer un cálculo
