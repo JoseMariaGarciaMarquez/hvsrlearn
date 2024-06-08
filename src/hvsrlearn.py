@@ -215,7 +215,6 @@ class HvsrCalculator:
         z = signal.detrend(z, type='linear')
         n = signal.detrend(n, type='linear')
         e = signal.detrend(e, type='linear')
-        overlapping = (5 / 100) * 8202
         samples = st_z[0].stats.sampling_rate
         
         f, Pz = signal.welch(z, fs=samples, 
