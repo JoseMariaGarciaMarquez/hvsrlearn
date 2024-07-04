@@ -9,19 +9,18 @@ Developed by: José María García Márquez
 - Webpage: https://www.josemaria.me
 - PayPal: https://www.paypal.com/paypalme/Chemitas96
 - Patreon: https://patreon.com/chemitas
-
 """
 import sys
-import tkinter as tk
 import numpy as np
-from tkinter import filedialog
-from PIL import Image, ImageTk
-from obspy import read
-from scipy import signal
-from obspy.signal.konnoohmachismoothing import konno_ohmachi_smoothing
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkinter as tk
 import matplotlib.pyplot as plt
 
+from obspy import read
+from scipy import signal
+from tkinter import filedialog
+from PIL import Image, ImageTk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from obspy.signal.konnoohmachismoothing import konno_ohmachi_smoothing
 
 class HvsrCalculator:
     """
