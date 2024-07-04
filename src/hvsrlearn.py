@@ -1,28 +1,37 @@
+""""
+HVSRLEARN
+A Python application to calculate the horizontal-to-vertical spectral ratio (HVSR) 
+spectrum from seismic data in three components.
+Developed by: José María García Márquez
+- Email: josemariagarciamarquez2.72@gmail.com
+- Github: https://www.github.com/JoseMariaGarciaMarquez
+- LinkedIn: https://www.linkedin.com/in/josé-maría-garcía-márquez-556a75199/
+- Webpage: https://www.josemaria.me
+- PayPal: https://www.paypal.com/paypalme/Chemitas96
+- Patreon: https://patreon.com/chemitas
+
+"""
 import sys
 import tkinter as tk
 import numpy as np
-import matplotlib.pyplot as plt
-import subprocess
-
 from tkinter import filedialog
 from PIL import Image, ImageTk
 from obspy import read
 from scipy import signal
-from obspy.core.trace import Trace
-from obspy.core.stream import Stream
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from obspy.signal.konnoohmachismoothing import konno_ohmachi_smoothing
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 
 
 class HvsrCalculator:
     """
-    Clase principal que realiza el cálculo del espectro de razón espectral horizontal-vertical (HVSR).
+    Main class that performs the calculation of the horizontal-to-vertical spectral ratio (HVSR) spectrum.
     """
     def __init__(self, master):
         self.master = master
         master.title("hvsrlearn")
 
-        # Cargar la imagen como ícono
+        # Load the image as icon
         icon_image = Image.open("images/icono.png")
         icon_image = icon_image.resize((150, 150), Image.BICUBIC)
         self.icon_image = ImageTk.PhotoImage(icon_image)
@@ -32,31 +41,30 @@ class HvsrCalculator:
         self.create_widgets()
 
     def create_widgets(self):
-
         self.image_label = tk.Label(self.master, image=self.icon_image)
-        self.image_label.grid(row=10 , column=2, rowspan=2, padx=10, pady=10)
+        self.image_label.grid(row=10, column=2, rowspan=2, padx=10, pady=10)
 
         self.terminal_text = tk.Text(self.master, wrap='word', height=10, width=85)
         self.terminal_text.grid(row=10, column=3, rowspan=10, padx=10, pady=10)
         sys.stdout = TextRedirector(self.terminal_text, "stdout")
 
-        # Widget de canvas para mostrar el gráfico
+        # Canvas widget to display the plot
         self.plot_canvas = FigureCanvasTkAgg(plt.Figure(figsize=(6, 5), dpi=100))
         self.plot_canvas_widget = self.plot_canvas.get_tk_widget()
         self.plot_canvas_widget.grid(row=0, column=3, rowspan=10, padx=10, pady=10)
 
-        # Botón para guardar imagen
+        # Button to save image
         self.save_image_button = tk.Button(self.master, text="Guardar Imagen", command=self.save_image)
-        self.save_image_button.grid(row=7, column=2 , padx=10, pady=10)
+        self.save_image_button.grid(row=7, column=2, padx=10, pady=10)
 
-        # Botón para cambiar el eje y a escala logarítmica
+        # Button to toggle the y-axis to logarithmic scale
         self.log_y_button = tk.Button(self.master, text="Eje Y Log", command=self.toggle_log_y)
         self.log_y_button.grid(row=8, column=2, padx=10, pady=5)
 
-        # Variable de control para el estado del eje y logarítmico
+        # Control variable for the log y-axis state
         self.log_y_state = tk.BooleanVar(value=False)
 
-        # Componentes
+        # Components
         self.label_z = tk.Label(self.master, text="Componente Z")
         self.label_z.grid(row=0, column=0)
         self.entry_z = tk.Entry(self.master)
@@ -78,11 +86,13 @@ class HvsrCalculator:
         self.button_e = tk.Button(self.master, text="Buscar", command=self.browse_e)
         self.button_e.grid(row=2, column=2)
 
-        # Procesamiento
-        self.label_smooth = tk.Label(self.master, text="Sobre-muestreo")
-        self.label_smooth.grid(row=3, column=0)
-        self.entry_smooth = tk.Entry(self.master)
-        self.entry_smooth.grid(row=3, column=1)
+        # Processing parameters
+        # Value of b
+        self.label_b = tk.Label(self.master, text="Konno-Ohmachi [b]")
+        self.label_b.grid(row=3, column=0)
+        self.entry_b = tk.Entry(self.master)
+        self.entry_b.grid(row=3, column=1)
+        self.entry_b.insert(0, "188.5")
 
         self.label_len = tk.Label(self.master, text="Ancho de ventana [s]")
         self.label_len.grid(row=4, column=0)
@@ -120,8 +130,6 @@ class HvsrCalculator:
         self.detrend_combo = tk.OptionMenu(self.master, self.detrend_var, 'linear', 'constant')
         self.detrend_combo.grid(row=9, column=1)
 
-
-
         self.calculate_button = tk.Button(self.master, text="Calcular", command=self.calculate_hvsr)
         self.calculate_button.grid(row=10, column=0, columnspan=2)
 
@@ -133,14 +141,12 @@ class HvsrCalculator:
             self.master.grid_columnconfigure(i, weight=1)
 
     def toggle_log_y(self):
-        # Función para cambiar el estado del eje y a escala logarítmica
         self.log_y_state.set(not self.log_y_state.get())
         self.update_plot()
 
     def update_plot(self):
-        # Función para actualizar el gráfico con el estado actual del eje y
         if hasattr(self, 'current_figure'):
-            ax = self.current_figure.axes[0]  # Obtener el objeto Axes
+            ax = self.current_figure.axes[0]
             ax.set_yscale('log' if self.log_y_state.get() else 'linear')
             self.plot_canvas.draw()
 
@@ -163,7 +169,8 @@ class HvsrCalculator:
         z = self.entry_z.get()
         n = self.entry_n.get()
         e = self.entry_e.get()
-        sm = float(self.entry_smooth.get())
+        b = float(self.entry_b.get())
+        sm = 1  # Setting sm as a constant with value 1
         method = self.hvs_var.get()
         window = self.window_var.get()
         ancho = float(self.entry_len.get())
@@ -171,135 +178,29 @@ class HvsrCalculator:
         detr = self.detrend_var.get()
         confianza = float(self.entry_sd.get())
 
-        # Llamar a la función de cálculo de HVSR
-        self.calculate_hvsr_helper(z, n, e, sm, method, window, ancho, overlap, detr, confianza)
-
-
-
-    def calculate_hvsr_helper(self, z, n, e, sm, method, window, ancho, overlap, detr, confianza):
-
-        """
-        Esta función calcula el espectro de razón espectral horizontal-vertical (HVSR) a partir de datos sísmicos en tres componentes.
-
-        Parámetros:
-        - z, n, e: Rutas de los archivos de datos sísmicos en las componentes Z, N y E respectivamente.
-        - sm: Factor de sobre-muestreo para el cálculo del espectro.
-        - method: Método de cálculo del HVSR. Puede ser 'Luendei and Albarello N', 'Luendei and Albarello E', 'Picozzi', 'Lunedei and Malischewsky', 'Nakamura' o 'Nuevo'.
-        - window: Ventana utilizada para el cálculo del espectro (por ejemplo, 'hann', 'hamming', etc.).
-        - ancho: Ancho de la ventana en segundos.
-        - overlap: Porcentaje de superposición entre ventanas.
-        - detr: Tipo de tendencia a eliminar de los datos ('linear', 'constant', etc.).
-        - confianza: Nivel de confianza para el umbral de la desviación estándar móvil.
-
-        Salida:
-        - Muestra un gráfico del HVSR con información adicional, incluyendo la frecuencia del sitio y datos rechazados.
-        """
-
-        # Cargar datos con ObsPy
+        # Read the data
         st_z = read(z)
         st_n = read(n)
         st_e = read(e)
-        
-        nperseg = ancho*st_z[0].stats.sampling_rate
 
-        # Obtener arreglos NumPy de los datos sísmicos
-        z = st_z[0].data
-        n = st_n[0].data
-        e = st_e[0].data
-        
-
-        # Overlapping calculation
-        overlapping = (overlap / 100) * nperseg
-
-        # Linear detrend the data
-        z = signal.detrend(z, type='linear')
-        n = signal.detrend(n, type='linear')
-        e = signal.detrend(e, type='linear')
+        z_data = st_z[0].data
+        n_data = st_n[0].data
+        e_data = st_e[0].data
         samples = st_z[0].stats.sampling_rate
-        
-        f, Pz = signal.welch(z, fs=samples, 
-                         window=window, 
-                         nperseg=nperseg, 
-                         noverlap=overlapping,
-                         nfft=sm*nperseg,detrend=detr,
-                         scaling='spectrum', average='median')
-        _, Pn = signal.welch(n, fs=samples, 
-                         window=window, 
-                         nperseg=nperseg, 
-                         noverlap=overlapping,
-                         nfft=sm*nperseg, detrend=detr,
-                         scaling='spectrum', average='median')
-        _, Pe = signal.welch(e, fs=samples, 
-                         window=window, 
-                         nperseg=nperseg, detrend=detr,
-                         noverlap=overlapping,
-                         nfft=sm*nperseg,
-                         scaling='spectrum', average='median')
 
-        # https://github.com/arkottke/pykooh/blob/main/example.ipynb
-        # Implementación de suavizamiento a partir del enlace anterior
-        b = 188.5
-        ko_Pz = konno_ohmachi_smoothing(Pz, f, b, normalize=True)
-        ko_Pn = konno_ohmachi_smoothing(Pn, f, b, normalize=True)
-        ko_Pe = konno_ohmachi_smoothing(Pe, f, b, normalize=True)
-        
-        if method == 'Luendei and Albarello N':
-            HV = ko_Pn / ko_Pz  # Lunedei and Albarello N
-            
-        if method == 'Luendei and Albarello E':
-            HV = ko_Pe / ko_Pz  # Lunedei and Albarello E
-        
-        if method == 'Picozzi':
-            HV = (np.sqrt(ko_Pn * ko_Pe)) / ko_Pz  # Picozzi
-            
-        if method == 'Lunedei and Malischewsky':
-            HV = np.sqrt((ko_Pn + ko_Pe) / ko_Pz)  # Lunedei and Malischewsky
-        
-        if method == 'Nakamura':
-            HV = (np.sqrt(ko_Pn**2 + ko_Pe**2)) / ko_Pz  # Nakamura
-            
-        if method == 'Nuevo':
-            HV = (ko_Pn + ko_Pe) / ko_Pz
-            
-        """
-        Sección para proponer un cálculo
-        """    
-        # Calcular la desviación estándar móvil
-        window_size=100
-        sd = np.std(HV[:window_size])
-        sd_moving = np.zeros_like(HV)
-        for i in range(window_size, len(HV)):
-            sd_moving[i-window_size:i] = sd
-            sd = np.std(HV[i-window_size+1:i+1])
-            
-        # Definir un umbral para la desviación estándar
-        sd_threshold = confianza * (max(sd_moving)/100)  
+        f, HV, sd_moving, f_rejected, rejected_data, frecuencia_sitio, HV_f, pos = self.calculate_hvsr_helper(
+            z_data, n_data, e_data, sm, method, window, ancho, overlap, detr, confianza, b, samples
+        )
 
-        # Crear la máscara con la condición de la desviación estándar
-        mask = sd_moving < sd_threshold
-
-        # Crear un arreglo para los datos rechazados
-        rejected_data = HV[~mask]
-        f_rejected = f[~mask]
-
-        f_f = f[mask]
-        HV_f = HV[mask]
-
-        pos = np.argmax(HV_f)
-        sd = sd_moving[pos]
-        frecuencia_sitio = f_f[pos]
-
-        
         print('----------------------------------------------------------\n'
-            'Estación: {}\n'
-            'Método usado: {}\n'
-            'Muestras por ventana: {}\n'
-            'frecuencia del sitio: {} Hz\n'
-            'Desviación estandar de la frecuencia: {} Hz\n'
-            'Amplitud del sitio: {} m\n'
-            'Comentarios:\n'.format(st_z[0].stats.station, method, nperseg, frecuencia_sitio, sd, 1/frecuencia_sitio))
-        
-        
+              'Estación: {}\n'
+              'Método usado: {}\n'
+              'Muestras por ventana: {}\n'
+              'frecuencia del sitio: {} Hz\n'
+              'Desviación estandar de la frecuencia: {} Hz\n'
+              'Amplitud del sitio: {} m\n'
+              'Comentarios:\n'.format(st_z[0].stats.station, method, ancho * samples, frecuencia_sitio, sd_moving[pos], 1 / frecuencia_sitio))
+
         figure = plt.Figure(figsize=(6, 5), dpi=100)
         ax = figure.add_subplot(1, 1, 1)
         ax.set_title('Station {}'.format(st_z[0].stats.station))
@@ -308,10 +209,6 @@ class HvsrCalculator:
         ax.plot(f, HV, label=method)
         ax.plot(f, sd_moving, label='SD')
         ax.axvline(frecuencia_sitio, c='red', label='Frecuencia del sitio')
-        #ax.axvline(frecuencia_sitio - sd, c='red', linestyle='--', )
-        #ax.axvline(frecuencia_sitio + sd, c='red', linestyle='--')
-        #ax.axvspan(frecuencia_sitio - sd, frecuencia_sitio + sd, color='pink', alpha=0.5)
-        #ax.axhline(sd_threshold, c='darkorange', linestyle='--')
         ax.fill_between(f, HV - sd_moving, HV + sd_moving, color='gray', alpha=0.5)
         ax.scatter(f_rejected, rejected_data, s=20, marker='*', c='gold', label='Rejected')
         ax.scatter(frecuencia_sitio, HV_f[pos], s=100, marker='*', c='violet')
@@ -322,19 +219,105 @@ class HvsrCalculator:
         ax.legend()
         ax.set_xscale('log')
 
-
-        # Actualizar el canvas con el nuevo gráfico
         self.plot_canvas.figure = figure
         self.plot_canvas.draw()
-                # Asignar la figura al objeto para que esté disponible para guardarla
         self.current_figure = figure
 
+    @staticmethod
+    def calculate_hvsr_helper(z, n, e, sm, method, window, ancho, overlap, detr, confianza, b, samples):
+        """
+        Function to calculate the horizontal-to-vertical spectral ratio (HVSR) spectrum from seismic data in three components.
+
+        Parameters:
+        - z, n, e: NumPy arrays of the seismic data in the Z, N, and E components, respectively.
+        - sm: Oversampling factor for the spectrum calculation.
+        - method: HVSR calculation method. It can be 'Luendei and Albarello N', 'Luendei and Albarello E', 'Picozzi', 'Lunedei and Malischewsky', 'Nakamura', or 'Nuevo'.
+        - window: Window used for spectrum calculation (e.g., 'hann', 'hamming', etc.).
+        - ancho: Window width in seconds.
+        - overlap: Percentage of overlap between windows.
+        - detr: Type of detrending to remove from the data ('linear', 'constant', etc.).
+        - confianza: Confidence level for the moving standard deviation threshold.
+        - b: Value of b for Konno-Ohmachi smoothing.
+        - samples: Sampling rate of the seismic data.
+
+        Output:
+        - Returns the frequency array, HVSR values, moving standard deviation, rejected frequencies and data, site frequency, and position of the peak.
+        """
+        nperseg = ancho * samples
+
+        z = signal.detrend(z, type='linear')
+        n = signal.detrend(n, type='linear')
+        e = signal.detrend(e, type='linear')
+
+        overlapping = (overlap / 100) * nperseg
+
+        f, Pz = signal.welch(z, fs=samples,
+                             window=window,
+                             nperseg=nperseg,
+                             noverlap=overlapping,
+                             nfft=sm * nperseg, detrend=detr,
+                             scaling='spectrum', average='median')
+        _, Pn = signal.welch(n, fs=samples,
+                             window=window,
+                             nperseg=nperseg,
+                             noverlap=overlapping,
+                             nfft=sm * nperseg, detrend=detr,
+                             scaling='spectrum', average='median')
+        _, Pe = signal.welch(e, fs=samples,
+                             window=window,
+                             nperseg=nperseg, detrend=detr,
+                             noverlap=overlapping,
+                             nfft=sm * nperseg,
+                             scaling='spectrum', average='median')
+
+        ko_Pz = konno_ohmachi_smoothing(Pz, f, b, normalize=True)
+        ko_Pn = konno_ohmachi_smoothing(Pn, f, b, normalize=True)
+        ko_Pe = konno_ohmachi_smoothing(Pe, f, b, normalize=True)
+
+        if method == 'Luendei and Albarello N':
+            HV = ko_Pn / ko_Pz
+
+        if method == 'Luendei and Albarello E':
+            HV = ko_Pe / ko_Pz
+
+        if method == 'Picozzi':
+            HV = (np.sqrt(ko_Pn * ko_Pe)) / ko_Pz
+
+        if method == 'Lunedei and Malischewsky':
+            HV = np.sqrt((ko_Pn + ko_Pe) / ko_Pz)
+
+        if method == 'Nakamura':
+            HV = (np.sqrt(ko_Pn**2 + ko_Pe**2)) / ko_Pz
+
+        if method == 'Nuevo':
+            HV = (ko_Pn + ko_Pe) / ko_Pz
+
+        window_size = 100
+        sd = np.std(HV[:window_size])
+        sd_moving = np.zeros_like(HV)
+        for i in range(window_size, len(HV)):
+            sd_moving[i - window_size:i] = sd
+            sd = np.std(HV[i - window_size + 1:i + 1])
+
+        sd_threshold = confianza * (max(sd_moving) / 100)
+        mask = sd_moving < sd_threshold
+
+        rejected_data = HV[~mask]
+        f_rejected = f[~mask]
+
+        f_f = f[mask]
+        HV_f = HV[mask]
+
+        pos = np.argmax(HV_f)
+        frecuencia_sitio = f_f[pos]
+
+        return f, HV, sd_moving, f_rejected, rejected_data, frecuencia_sitio, HV_f, pos
+
     def save_image(self):
-        # Función para guardar la imagen actual del gráfico
         if hasattr(self, 'current_figure'):
             file_path = filedialog.asksaveasfilename(defaultextension=".png",
-                                                       filetypes=[("PNG files", "*.png"), ("All files", "*.*")],
-                                                       title="Guardar Imagen")
+                                                     filetypes=[("PNG files", "*.png"), ("All files", "*.*")],
+                                                     title="Guardar Imagen")
             if file_path:
                 self.current_figure.savefig(file_path)
 
@@ -356,6 +339,7 @@ def main():
     root = tk.Tk()
     app = HvsrCalculator(root)
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()
