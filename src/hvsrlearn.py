@@ -197,7 +197,7 @@ class HvsrCalculator:
               'Muestras por ventana: {}\n'
               'frecuencia del sitio: {} Hz\n'
               'Desviación estandar de la frecuencia: {} Hz\n'
-              'Amplitud del sitio: {} m\n'
+              'Periodo del sitio: {} s\n'
               'Comentarios:\n'.format(st_z[0].stats.station, method, ancho * samples, frecuencia_sitio, sd_moving[pos], 1 / frecuencia_sitio))
 
         figure = plt.Figure(figsize=(6, 5), dpi=100)
@@ -211,6 +211,8 @@ class HvsrCalculator:
         ax.fill_between(f, HV - sd_moving, HV + sd_moving, color='gray', alpha=0.5)
         ax.scatter(f_rejected, rejected_data, s=20, marker='*', c='gold', label='Rejected')
         ax.scatter(frecuencia_sitio, HV_f[pos], s=100, marker='*', c='violet')
+        ax.axvline(x=0.1, color='r', linestyle='--', linewidth=0.8)
+        ax.axvline(x=20, color='r', linestyle='--', linewidth=0.8)
         ax.set_ylim(0, max(HV))
         ax.grid(True, which='both', linestyle='--', linewidth=0.5)
         ax.set_xlabel('Frecuencia', fontsize=15)
