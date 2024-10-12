@@ -14,9 +14,11 @@ import sys
 import numpy as np
 import tkinter as tk
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 from obspy import read
 from scipy import signal
+from obspy import UTCDateTime
 from tkinter import filedialog
 from PIL import Image, ImageTk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -95,6 +97,9 @@ class HvsrCalculator:
         # Button to view info
         self.info_button = tk.Button(self.master, text="Ver Información", command=self.view_info)
         self.info_button.grid(row=3, column=2)  # Add this button next to the Konno-Ohmachi parameter
+
+        self.view_data_button = tk.Button(self.master, text="Ver Datos", command=self.show_time_series)
+        self.view_data_button.grid(row=9, column=2, padx=10, pady=10)
 
         self.label_len = tk.Label(self.master, text="Ancho de ventana [s]")
         self.label_len.grid(row=4, column=0)
@@ -223,6 +228,29 @@ class HvsrCalculator:
         self.entry_e.delete(0, tk.END)
         self.entry_e.insert(0, filename)
 
+    def show_time_series(self):
+        """
+        Load the data and display the time series for the Z, N, and E components.
+        """
+        z = self.entry_z.get()
+        n = self.entry_n.get()
+        e = self.entry_e.get()
+
+        try:
+            # Load the seismic data
+            st_z = read(z)
+            st_n = read(n)
+            st_e = read(e)
+
+            # Call the viewdata function to create the plot
+            fig = viewdata(st_z, st_n, st_e)
+
+            # Display the plot in the existing plot canvas
+            self.plot_canvas.figure = fig
+            self.plot_canvas.draw()
+
+        except Exception as e:
+            print(f"Error al cargar los archivos de datos: {e}")
     def calculate_hvsr(self):
         z = self.entry_z.get()
         n = self.entry_n.get()
@@ -381,6 +409,55 @@ class HvsrCalculator:
             if file_path:
                 self.current_figure.savefig(file_path)
 
+def viewdata(z, n, e):
+    """
+    Plot the time series data for the Z, N, and E components efficiently.
+    """
+    # Obtener datos y metadatos de las componentes Z, N y E
+    z_data, n_data, e_data = z[0].data, n[0].data, e[0].data
+    start_time = z[0].stats.starttime  # UTCDateTime
+    delta = z[0].stats.delta  # Intervalo de muestreo
+    station = z[0].stats.station  # Nombre de la estación
+
+    # Vectorizar el cálculo del tiempo usando np.arange para eficiencia
+    total_samples = len(z_data)
+    z_times = mdates.date2num(start_time) + np.arange(total_samples) * delta
+
+
+    # Crear figura con 3 subplots, compartiendo el eje X
+    fig, ax = plt.subplots(3, 1, figsize=(6, 5), dpi=100, sharex=True)
+
+    # Plotear cada componente
+    ax[0].plot(z_times, z_data, color='b')
+    ax[0].set_ylabel('Amplitud')
+    ax[0].set_title('Componente Z (Vertical)')
+    ax[0].grid(True)
+
+    ax[1].plot(z_times, n_data, color='g')
+    ax[1].set_ylabel('Amplitud')
+    ax[1].set_title('Componente N (Norte-Sur)')
+    ax[1].grid(True)
+
+    ax[2].plot(z_times, e_data, color='r')
+    ax[2].set_ylabel('Amplitud')
+    ax[2].set_xlabel('Tiempo (UTC)')
+    ax[2].set_title('Componente E (Este-Oeste)')
+    ax[2].grid(True)
+
+    # Configurar formateadores y locators del eje X
+    ax[2].xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+    ax[2].xaxis.set_major_locator(mdates.AutoDateLocator())
+
+    # Rotar las etiquetas del eje X para mejorar legibilidad
+    plt.setp(ax[2].xaxis.get_majorticklabels(), rotation=45)
+
+    # Agregar título general y ajustar el layout
+    fig.suptitle(f'Estación: {station} - Datos de componentes Z, N, E',
+                 fontsize=14, fontweight='bold')
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+
+    # Devolver la figura
+    return fig
 
 class TextRedirector:
     def __init__(self, widget, tag="stdout"):
@@ -392,7 +469,7 @@ class TextRedirector:
         self.widget.see(tk.END)
 
     def flush(self):
-        pass
+        pass 
 
 
 def main():
