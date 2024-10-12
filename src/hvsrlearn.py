@@ -63,7 +63,7 @@ class HvsrCalculator:
         # Control variable for the log y-axis state
         self.log_y_state = tk.BooleanVar(value=False)
 
-        # Components
+        # Components for Z, N, E files
         self.label_z = tk.Label(self.master, text="Componente Z")
         self.label_z.grid(row=0, column=0)
         self.entry_z = tk.Entry(self.master)
@@ -86,12 +86,15 @@ class HvsrCalculator:
         self.button_e.grid(row=2, column=2)
 
         # Processing parameters
-        # Value of b
         self.label_b = tk.Label(self.master, text="Konno-Ohmachi [b]")
         self.label_b.grid(row=3, column=0)
         self.entry_b = tk.Entry(self.master)
         self.entry_b.grid(row=3, column=1)
         self.entry_b.insert(0, "188.5")
+
+        # Button to view info
+        self.info_button = tk.Button(self.master, text="Ver Información", command=self.view_info)
+        self.info_button.grid(row=3, column=2)  # Add this button next to the Konno-Ohmachi parameter
 
         self.label_len = tk.Label(self.master, text="Ancho de ventana [s]")
         self.label_len.grid(row=4, column=0)
@@ -139,6 +142,62 @@ class HvsrCalculator:
             self.master.grid_rowconfigure(i, weight=1)
             self.master.grid_columnconfigure(i, weight=1)
 
+    def view_info(self):
+        """
+        Show information about the loaded data in the terminal text area.
+        """
+        z = self.entry_z.get()
+        n = self.entry_n.get()
+        e = self.entry_e.get()
+
+        try:
+            # Load the seismic data
+            st_z = read(z)
+            st_n = read(n)
+            st_e = read(e)
+
+            # Call the function viewinfo
+            self.viewinfo(st_z, st_n, st_e)
+
+        except Exception as e:
+            print(f"Error al cargar los archivos de datos: {e}")
+
+    def viewinfo(self, z, n, e):
+        """
+        Print information about the seismic data in the terminal text area.
+        """
+        estacion = z[0].stats.station
+        loc = z[0].stats.location
+        tiempo_start = z[0].stats.starttime
+        tiempo_end = z[0].stats.endtime
+        sampling_rate = z[0].stats.sampling_rate
+        cantidad_datos = z[0].stats.npts
+        formato_archivo = z[0].stats._format
+
+        componente_z = z[0].stats.channel
+        componente_n = n[0].stats.channel
+        componente_e = e[0].stats.channel
+
+        # Print the information
+        print('----------------- INFORMACIÓN DE LOS DATOS -----------------')
+        print(f'Estación: {estacion}')
+        if loc:
+            print(f'Localización: {loc}')
+        else:
+            print('Localización: No disponible (Considera añadir coordenadas GPS)')
+        
+        print(f'Hora de inicio de la medición: {tiempo_start}')
+        print(f'Hora de fin de la medición: {tiempo_end}')
+        print(f'Tasa de muestreo: {sampling_rate} Hz')
+        print(f'Cantidad de puntos de datos: {cantidad_datos}')
+        print(f'Formato de archivo: {formato_archivo}')
+        
+        print('\nComponentes cargados:')
+        print(f'- Componente Z (vertical): {componente_z}')
+        print(f'- Componente N (norte-sur): {componente_n}')
+        print(f'- Componente E (este-oeste): {componente_e}')
+        print('------------------------------------------------------------')
+    
     def toggle_log_y(self):
         self.log_y_state.set(not self.log_y_state.get())
         self.update_plot()
