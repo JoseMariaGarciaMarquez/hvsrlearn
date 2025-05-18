@@ -145,7 +145,6 @@ class HVSRWindow(QDialog):
         ax.plot(f, HV + sd_moving, '--', lw=0.5, c='black')
         ax.fill_between(f, HV - sd_moving, HV + sd_moving, color='gray', alpha=0.5)
         ax.plot(f, HV, label='HVSR', color='purple')
-        ax.plot(f, sd_moving, label='SD', color='green', lw=0.8)
         if len(HV_f) > 0:
             ax.scatter(frecuencia_sitio, HV_f[pos], s=100, marker='*', c='violet', label='Pico')
             ax.axvline(frecuencia_sitio, c='red', label='Frecuencia del sitio')
