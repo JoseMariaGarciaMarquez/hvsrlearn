@@ -51,6 +51,9 @@ class ProcessWindow(QDialog):
         layout.addWidget(self.lowcut_edit)
         layout.addWidget(self.highcut_edit)
 
+        self.lowcut_edit.textChanged.connect(self.plot_fourier)
+        self.highcut_edit.textChanged.connect(self.plot_fourier)
+
         self.reject_start = QLineEdit()
         self.reject_start.setPlaceholderText("Inicio ventana a rechazar (s)")
         self.reject_end = QLineEdit()
@@ -59,7 +62,6 @@ class ProcessWindow(QDialog):
         layout.addWidget(self.reject_end)
 
     def plot_fourier(self):
-
         self.figure.clear()
         ax = self.figure.add_subplot(1, 1, 1)
         componentes = ['z', 'n', 'e']
@@ -73,6 +75,19 @@ class ProcessWindow(QDialog):
             freqs = np.fft.rfftfreq(N, d=1/sr)
             spectrum = np.abs(np.fft.rfft(data))
             ax.plot(freqs, spectrum, color=color, label=nombre)
+
+        # Dibuja líneas verticales si hay frecuencias introducidas
+        try:
+            lowcut = float(self.lowcut_edit.text())
+            ax.axvline(lowcut, color='orange', linestyle='--', label='Frec. mínima')
+        except Exception:
+            pass
+        try:
+            highcut = float(self.highcut_edit.text())
+            ax.axvline(highcut, color='green', linestyle='--', label='Frec. máxima')
+        except Exception:
+            pass
+
         ax.set_xlabel("Frecuencia (Hz)")
         ax.set_ylabel("Amplitud")
         ax.set_title("Espectros de Fourier")
@@ -124,7 +139,6 @@ class ProcessWindow(QDialog):
         # Actualiza los datos en la ventana principal
         if self.parent is not None:
             self.parent.datos = self.datos_procesados
-            # Si quieres actualizar el plot principal:
             from plot_data import DataPlotter
             plotter = DataPlotter(self.parent.figure_datos)
             plotter.plot_triple_component(self.parent.datos)

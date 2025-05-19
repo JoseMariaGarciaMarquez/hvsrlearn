@@ -1,4 +1,8 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, QComboBox, QMessageBox, QFileDialog
+import os
+from PyQt5.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QPushButton, QLabel, QLineEdit, QComboBox, QMessageBox, QFileDialog, QCheckBox
+)
+from PyQt5.QtGui import QIcon
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from hvsr_calculator import calculate_hvsr_helper
@@ -11,10 +15,11 @@ class HVSRWindow(QDialog):
         self.parent = parent
         self.hvsr_results = None
         self.init_ui()
+        self.resize(500, 500)  # Ajusta el tamaño inicial
 
     def init_ui(self):
         layout = QVBoxLayout(self)
-        param_layout = QHBoxLayout()
+        form_layout = QFormLayout()
 
         self.method_box = QComboBox()
         self.method_box.addItems([
@@ -26,46 +31,60 @@ class HVSRWindow(QDialog):
             "Nuevo"
         ])
         self.method_box.setCurrentText("Nakamura")
-        param_layout.addWidget(QLabel("Método:"))
-        param_layout.addWidget(self.method_box)
+        form_layout.addRow("Método:", self.method_box)
 
         self.window_box = QComboBox()
         self.window_box.addItems(["hann", "hamming", "blackman"])
         self.window_box.setCurrentText("hamming")
-        param_layout.addWidget(QLabel("Ventana:"))
-        param_layout.addWidget(self.window_box)
+        form_layout.addRow("Ventana:", self.window_box)
 
         self.ancho_edit = QLineEdit("82.02")
-        param_layout.addWidget(QLabel("Ancho (s):"))
-        param_layout.addWidget(self.ancho_edit)
+        form_layout.addRow("Ancho (s):", self.ancho_edit)
 
         self.overlap_edit = QLineEdit("5")
-        param_layout.addWidget(QLabel("Overlap (%):"))
-        param_layout.addWidget(self.overlap_edit)
-
-        self.sm_edit = QLineEdit("1")
-        self.sm_edit.setDisabled(True)
-        param_layout.addWidget(QLabel("sm:"))
-        param_layout.addWidget(self.sm_edit)
+        form_layout.addRow("Overlap (%):", self.overlap_edit)
 
         self.detrend_box = QComboBox()
         self.detrend_box.addItems(["constant", "linear"])
         self.detrend_box.setCurrentText("linear")
-        param_layout.addWidget(QLabel("Detrend:"))
-        param_layout.addWidget(self.detrend_box)
-
-        self.confianza_edit = QLineEdit("100")
-        self.confianza_edit.setDisabled(True)
-        param_layout.addWidget(QLabel("Confianza (%):"))
-        param_layout.addWidget(self.confianza_edit)
+        form_layout.addRow("Detrend:", self.detrend_box)
 
         self.b_edit = QLineEdit("188.5")
-        param_layout.addWidget(QLabel("Konno-Ohmachi b:"))
-        param_layout.addWidget(self.b_edit)
+        form_layout.addRow("Konno-Ohmachi b:", self.b_edit)
 
-        layout.addLayout(param_layout)
+        # Frecuencia fundamental
+        self.freq_edit = QLineEdit()
+        self.freq_edit.setPlaceholderText("Automática")
+        self.freq_edit.setToolTip("Frecuencia fundamental detectada. Puedes editarla para marcar otra frecuencia.")
+        form_layout.addRow("Frecuencia fundamental (Hz):", self.freq_edit)
 
-        self.figure = Figure(figsize=(7, 4))
+        # Georreferenciación
+        geo_layout = QHBoxLayout()
+        self.geo_checkbox = QCheckBox("Georreferenciar")
+        geo_layout.addWidget(self.geo_checkbox)
+        self.lat_edit = QLineEdit()
+        self.lat_edit.setPlaceholderText("Latitud")
+        self.lat_edit.setDisabled(True)
+        geo_layout.addWidget(QLabel("Lat:"))
+        geo_layout.addWidget(self.lat_edit)
+        self.lon_edit = QLineEdit()
+        self.lon_edit.setPlaceholderText("Longitud")
+        self.lon_edit.setDisabled(True)
+        geo_layout.addWidget(QLabel("Lon:"))
+        geo_layout.addWidget(self.lon_edit)
+        form_layout.addRow("Ubicación:", geo_layout)
+
+        # Habilita/deshabilita los campos según el checkbox
+        self.geo_checkbox.stateChanged.connect(
+            lambda state: [
+                self.lat_edit.setDisabled(not state),
+                self.lon_edit.setDisabled(not state)
+            ]
+        )
+
+        layout.addLayout(form_layout)
+
+        self.figure = Figure(figsize=(6, 3))
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(QLabel("Cociente espectral H/V"))
         layout.addWidget(self.canvas)
@@ -117,8 +136,23 @@ class HVSRWindow(QDialog):
         f, HV, sd_moving, f_rejected, rejected_data, frecuencia_sitio, HV_f, pos = calculate_hvsr_helper(
             z, n, e, sm, method, window, ancho, overlap, detr, confianza, b, samples
         )
+        self.freq_edit.setText(f"{frecuencia_sitio:.3f}")
+        geo_data = None
+        if self.geo_checkbox.isChecked():
+            try:
+                lat = float(self.lat_edit.text())
+                lon = float(self.lon_edit.text())
+                geo_data = {"lat": lat, "lon": lon}
+            except Exception:
+                geo_data = None
+
+        try:
+            freq_usuario = float(self.freq_edit.text())
+        except Exception:
+            freq_usuario = None
 
         self.hvsr_results = {
+            "geo": geo_data,
             "frecuencia_sitio": frecuencia_sitio,
             "HVSR": HV,
             "frecuencias": f,
@@ -148,6 +182,8 @@ class HVSRWindow(QDialog):
         if len(HV_f) > 0:
             ax.scatter(frecuencia_sitio, HV_f[pos], s=100, marker='*', c='violet', label='Pico')
             ax.axvline(frecuencia_sitio, c='red', label='Frecuencia del sitio')
+        if freq_usuario and abs(freq_usuario - frecuencia_sitio) > 1e-3:
+            ax.axvline(freq_usuario, c='orange', linestyle='--', label='Frecuencia usuario')
         ax.set_xlim(0.1, 20)
         ax.set_ylim(0, max(HV) * 1.1)
         ax.grid(True, which='both', linestyle='--', linewidth=0.5)
@@ -159,6 +195,12 @@ class HVSRWindow(QDialog):
         self.canvas.draw()
 
     def save_results(self):
+        try:
+            freq_usuario = float(self.freq_edit.text())
+        except Exception:
+            freq_usuario = None
+
+        self.hvsr_results["frecuencia_usuario"] = freq_usuario
         if self.hvsr_results is None:
             QMessageBox.warning(self, "Error", "Primero calcula el HVSR.")
             return
@@ -168,6 +210,18 @@ class HVSRWindow(QDialog):
                 self.parent.show_hvsr_results()
             if hasattr(self.parent, "tabs") and hasattr(self.parent, "tab_hvsr"):
                 self.parent.tabs.setCurrentWidget(self.parent.tab_hvsr)
+
+            if self.hvsr_results.get("geo") is not None:
+                punto = {
+                    "lat": self.hvsr_results["geo"]["lat"],
+                    "lon": self.hvsr_results["geo"]["lon"],
+                    "frecuencia": self.hvsr_results["frecuencia_sitio"],
+                    "periodo": 1.0 / self.hvsr_results["frecuencia_sitio"] if self.hvsr_results["frecuencia_sitio"] > 0 else None
+                }
+                if hasattr(self.parent, "hvsr_points"):
+                    self.parent.hvsr_points.append(punto)
+                if hasattr(self.parent, "show_hvsr_map"):
+                    self.parent.show_hvsr_map()
         QMessageBox.information(self, "Guardado", "Resultados HVSR guardados y mostrados en la ventana principal.")
         self.accept()
 
