@@ -2,15 +2,15 @@ import numpy as np
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QLineEdit, QMessageBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from process import ProcessData  # Importa tu clase de procesamiento
+from process import ProcessData 
 
 class ProcessWindow(QDialog):
     def __init__(self, datos, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Procesamiento de Señales")
-        self.datos_original = datos  # Diccionario original
-        self.datos_procesados = datos.copy()  # Para no modificar el original hasta guardar
-        self.parent = parent  # Referencia a la ventana principal para actualizar datos
+        self.datos_original = datos  
+        self.datos_procesados = datos.copy() 
+        self.parent = parent 
         self.init_ui()
 
     def init_ui(self):

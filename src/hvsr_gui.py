@@ -16,7 +16,7 @@ from process_window import ProcessWindow
 from load_data import load_sac_triple
 from plot_data import DataPlotter
 from hvsr_window import HVSRWindow
-
+from learn import LearnWindow
 
 class ProcessingDialog(QDialog):
     def __init__(self, parent=None):
@@ -61,6 +61,10 @@ class HvsrMainWindow(QMainWindow):
         hvsr_action = QAction("Cocientes espectrales", self)
         hvsr_action.triggered.connect(self.open_hvsr_dialog)
         toolbar.addAction(hvsr_action)
+
+        learn_action = QAction("Aprender", self)
+        learn_action.triggered.connect(self.open_learn_window)
+        toolbar.addAction(learn_action)
 
         # Widget central: tabs de figuras + terminal
         central_widget = QWidget(self)
@@ -155,7 +159,10 @@ class HvsrMainWindow(QMainWindow):
             plotter.plot_triple_component(datos)
             self.canvas_datos.draw()
 
-
+    def open_learn_window(self):
+        dlg = LearnWindow(self)
+        dlg.exec_()
+        
     def open_processing_dialog(self):
         dlg = ProcessWindow(self.datos, self)
         dlg.exec_()
