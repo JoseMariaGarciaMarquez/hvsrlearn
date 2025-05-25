@@ -13,7 +13,7 @@ import numpy as np
 from scipy.interpolate import griddata
 
 from process_window import ProcessWindow
-from load_data import load_sac_triple
+from load_data import DataLoader
 from plot_data import DataPlotter
 from hvsr_window import HVSRWindow
 from learn import LearnWindow
@@ -128,31 +128,30 @@ class HvsrMainWindow(QMainWindow):
     def load_data(self):
         file_dialog = QFileDialog(self)
         file_dialog.setFileMode(QFileDialog.ExistingFiles)
-        file_dialog.setNameFilter("Archivos SAC (*.sac);;Todos los archivos (*)")
+        file_dialog.setNameFilter("Archivos sísmicos (*.sac *.gcf *.mseed *.miniseed *.dat *.sgy *.segy);;Todos los archivos (*)")
         if file_dialog.exec_():
             files = file_dialog.selectedFiles()
             if len(files) != 3:
-                self.terminal.append("Por favor selecciona exactamente 3 archivos SAC: Z, N y E.")
+                self.terminal.append("Por favor selecciona exactamente 3 archivos: Z, N y E.")
                 return
 
             # Identificar cada componente por su nombre de archivo
             rutas = {'z': None, 'n': None, 'e': None}
             for f in files:
                 fname = f.lower()
-                if '.z.' in fname or fname.endswith('z.sac'):
+                if '.z.' in fname or fname.endswith('z.sac') or fname.endswith('z.gcf'):
                     rutas['z'] = f
-                elif '.n.' in fname or fname.endswith('n.sac'):
+                elif '.n.' in fname or fname.endswith('n.sac') or fname.endswith('n.gcf'):
                     rutas['n'] = f
-                elif '.e.' in fname or fname.endswith('e.sac'):
+                elif '.e.' in fname or fname.endswith('e.sac') or fname.endswith('e.gcf'):
                     rutas['e'] = f
 
             if None in rutas.values():
                 self.terminal.append("No se pudieron identificar las tres componentes (Z, N, E).")
                 return
 
-            # --- Aquí se usa load_sac_triple ---
-            datos = load_sac_triple(rutas['z'], rutas['n'], rutas['e'])
-            self.datos = datos 
+            datos = DataLoader.load_triple(rutas['z'], rutas['n'], rutas['e'])
+            self.datos = datos
             self.terminal.append(f"Archivos cargados:\nZ: {rutas['z']}\nN: {rutas['n']}\nE: {rutas['e']}")
 
             plotter = DataPlotter(self.figure_datos)
